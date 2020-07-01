@@ -81,6 +81,47 @@ Short preamble example (sampling rate - 1Mhz):
 https://github.com/merbanan/rtl_433_tests/tree/master/tests/lacrosse/06/gfile-tx29-short-preamble.cu8.
 TX29 and TX35 share the same protocol, but pulse are different length, thus this decoder
 handle the two signal and we use two r_device struct (only differing by the pulse width).
+From rtl example file gfile-tx29.cu8 (decoded successfully by rtl_433 version Elantra2012TPMS-1-g7541af5 branch WorkingBranchForElantra2012TPMS at 201909291032 inputs file rtl_tcp RTL-SDR SoapySDR)using inspectrum
+1 0 1 0 1 0 1 0 0 0 1 0 1 1 0 1 1 1 0 1 0 1 0 0 1 0 0 1 0 0 1 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 0 0 0 1 1 0 1 0 1 0 1 1 1 0 1 1 0 0
+=1010 1010 0010 1101 1101 0100 1001 0010 1000 0100 0100 1000 0110 1010 1110 1100
+= AA2DD49284486AEC  rate 275.269Hz period 3.63281 ms symbol rate 17.6172 kBd symbol period 56.7627 us
+
+Readme from trl_tests file says data should be aa 2d d4 92 84 48 6a ec
+which is 
+1010 1010 0010 1101 1101 0100 1001 0010 1000 0100 0100 1000 0110 1010 1110 1100
+
+After sending and reading via inspectrum
+1 1 0 1 0 1 0 1 0 0 0 1 0 1 1 0 1 1 1 0 1 0 1 0 0 1 0 0 1 0 0 1 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 0 0 0 1 1 0 1 0 1 0 1 1 1 0 1 1 0 0  = extra 1 at the start
+
+removing extra 1 gives
+1 0 1 0 1 0 1 0 0 0 1 0 1 1 0 1 1 1 0 1 0 1 0 0 1 0 0 1 0 0 1 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 0 0 0 1 1 0 1 0 1 0 1 1 1 0 1 1 0 0
+= AA2DD49284486AEC
+
+so - let's send without the extra 1
+
+0101 0100 0101 1011 1010 1001 0010 0101 0000 1000 1001 0000 1101 0101 1101 100 0 (add an extra 0 at the end) = 54 5B A9 25 08 90 D5 D8
+
+capture and decode via inspectrum
+1 0 1 0 1 0 1 0 0 0 1 0 1 1 0 1 1 1 0 1 0 1 0 0 1 0 0 1 0 0 1 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 0 0 0 1 1 0 1 0 1 0 1 1 1 0 1 1 0 0
+
+1010 1010 0010 1101 1101 0100 1001 0010 1000 0100 0100 1000 0110 1010 1110 1100  = AA2DD49284486AEC
+
+
+from gfile-tx29-short-preamble.cu8   (Not decoded by rtl_433 version Elantra2012TPMS-1-g7541af5 branch WorkingBranchForElantra2012TPMS at 201909291032 inputs file rtl_tcp RTL-SDR SoapySDR)
+1 0 1 0 1 0 1 0 0 0 1 0 1 1 0 1 1 1 0 1 0 1 0 0 1 0 0 1 0 0 1 1 1 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 1 0 1 0 1 0 1 1 0 1 1 1 0 1
+=1010 1010 0010 1101 1101 0100 1001 0011 1100 0101 1000 0100 0110 1010 1101 1101  = AA 2D D4 93 C5 84 6A DD
+Read me file says this data should be = aa 2d d4 96 a6 41 22 50
+
+ = 1010 1010 0010 1101 1101 0100 1001 0110 1010 0110 0100 0001 0010 0010 0101 0000
+
+
+
+Transmitter is actually Tx37u-it
+80 bit data
+1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 0 0 1 0 1 1 0 1 1 1 0 1 0 1 0 0 1 0 0 1 0 0 1 0 0 0 0 0 0 1 1 0 0 0 0 0 0 1 0 0 0 1 1 0 1 0 1 0 1 0 0 0 1 0 0 0 
+==AAAAAA2DD49206046A88
+AA AA AA 2D D4 92 06 04 6A 88
+ = {"time" : "@0.043352s", "brand" : "LaCrosse", "model" : "TX29-IT", "id" : 8, "battery" : "OK", "newbattery" : 0, "temperature_C" : 20.400, "mic" : "CRC"}
 */
  
 
@@ -88,32 +129,30 @@ handle the two signal and we use two r_device struct (only differing by the puls
 #include <HopeDuino_RFM69.h> 
 
 rf69Class radio;
-//1010 1010 1010 1010 1010 1010 1010 1010 1 = preamble 33 bis
-//0010 1101 1101 0100 =0x2dd4 brand identifier
-//1001 = 9 Data len - no. of nibbles (4 bits) to follow - total 40 bits. hence 9x4 to follow after data len
-//
-//1001 0010 1000 0100 0100 1000 0110 1010 1110 1100
-byte str[5] = {146,132,72,106,236};
+//want to transmit a total of this - 8 bytes. 
+//byte str[4] = {132,72,106,236 }; //AA 2D D4 92 84 48 6A EC
+byte str[4] = {8,144,213,216 }; //54 5B A9 25 08 90 D5 D8
 
 void setup()
 {
- radio.Modulation     = OOK;
+ radio.Modulation     = FSK;
  radio.COB            = RFM69H;
  radio.Frequency      = 914865;
- radio.OutputPower    = 20+11;          //10dBm OutputPower //range: 0-31 [-11dBm~+20dBm] for RFM69H/RFM69HC
- radio.PreambleLength = 4;             //4 Byte preamble (need to make it 33 bits 1010 1010 1010 1010 1010 1010 1010 1010 1) - will keep 32 bits here and add the last 1 to next
+ radio.OutputPower    = 12;          //10dBm OutputPower //range: 0-31 [-11dBm~+20dBm] for RFM69H/RFM69HC
+ radio.PreambleLength = 0;             //4 Byte preamble (need to make it 33 bits 1010 1010 1010 1010 1010 1010 1010 1010 1) - will keep 32 bits here and add the last 1 to next
  radio.FixedPktLength = true;           //packet length didn't in message which need to be send
- radio.PayloadLength  = 5;
+ radio.PayloadLength  = 4;
  radio.CrcDisable     = true;
  radio.AesOn          = false;
 
- radio.SymbolTime     = 58004;         //17.24 Kbps
- radio.Devation       = 0;             //devation only need for FSK
+ radio.SymbolTime     = 56763;         //17.24 Kbps
+ radio.Devation       = 35;             //devation only need for FSK
  radio.BandWidth      = 100;            //100KHz for bandwidth
- radio.SyncLength     = 3;              //
- radio.SyncWord[0]    = 0xAA;
- radio.SyncWord[1]    = 0x2D;
- radio.SyncWord[2]    = 0xD4;
+ radio.SyncLength     = 4;//3;              //
+ radio.SyncWord[0]    = 0x54;//0xA8;//0xAA; //1010 1000
+ radio.SyncWord[1]    = 0x5B; //0xB7;//0x2D;
+ radio.SyncWord[2]    =0xA9; //0x52;//0xD4;
+ radio.SyncWord[3]    = 0x25;//Added;
  radio.vInitialize();
  radio.vGoStandby();
 
@@ -121,7 +160,7 @@ void setup()
 
 void loop()
 {
- radio.bSendMessage(str, 5);
+ radio.bSendMessage(str, 4);
 
  delay(4000);
 
