@@ -131,28 +131,28 @@ AA AA AA 2D D4 92 06 04 6A 88
 rf69Class radio;
 //want to transmit a total of this - 8 bytes. 
 //byte str[4] = {132,72,106,236 }; //AA 2D D4 92 84 48 6A EC
-byte str[4] = {8,144,213,216 }; //54 5B A9 25 08 90 D5 D8
-
+//byte str[4] = {8,144,213,216 }; //54 5B A9 25 08 90 D5 D8
+byte str[4] = {6,4,106,136 }; //06 04 6A 88
 void setup()
 {
  radio.Modulation     = FSK;
  radio.COB            = RFM69H;
  radio.Frequency      = 914865;
  radio.OutputPower    = 12;          //10dBm OutputPower //range: 0-31 [-11dBm~+20dBm] for RFM69H/RFM69HC
- radio.PreambleLength = 0;             //4 Byte preamble (need to make it 33 bits 1010 1010 1010 1010 1010 1010 1010 1010 1) - will keep 32 bits here and add the last 1 to next
+ radio.PreambleLength = 2;             //4 Byte preamble (need to make it 33 bits 1010 1010 1010 1010 1010 1010 1010 1010 1) - will keep 32 bits here and add the last 1 to next
  radio.FixedPktLength = true;           //packet length didn't in message which need to be send
  radio.PayloadLength  = 4;
  radio.CrcDisable     = true;
  radio.AesOn          = false;
 
- radio.SymbolTime     = 56763;         //17.24 Kbps
+ radio.SymbolTime     = 58000;         //
  radio.Devation       = 35;             //devation only need for FSK
  radio.BandWidth      = 100;            //100KHz for bandwidth
  radio.SyncLength     = 4;//3;              //
- radio.SyncWord[0]    = 0x54;//0xA8;//0xAA; //1010 1000
- radio.SyncWord[1]    = 0x5B; //0xB7;//0x2D;
- radio.SyncWord[2]    =0xA9; //0x52;//0xD4;
- radio.SyncWord[3]    = 0x25;//Added;
+ radio.SyncWord[0]    = 0xAA;//0xA8;//0xAA; //1010 1000
+ radio.SyncWord[1]    = 0x2D; //0xB7;//0x2D;
+ radio.SyncWord[2]    =0xD4; //0x52;//0xD4;
+ radio.SyncWord[3]    = 0x92;//Added;
  radio.vInitialize();
  radio.vGoStandby();
 
